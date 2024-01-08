@@ -88,6 +88,48 @@ class Ball {
   }
 }
 
+const spawnBalls = () => {
+  // Clear existing balls
+  ballsArray = [];
+
+  // Spawn cue ball
+  ballsArray.push(new Ball('cue', width / 6, height / 2, 80, 10, 'white', 0));
+
+  // Spawn 15 balls
+  let ballNumber = 1;
+  let rackY = height / 2;
+  let rackX = width / 1.5;
+  let row = 0;
+  let col = 0;
+  let radius = 20;
+  let padding = 1;
+
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j <= i; j++) {
+      let x = rackX + row * (radius * 2 + padding - radius / 4);
+      let y = rackY + col * (radius * 2 + padding) - (i * radius + i * padding);
+      let color, ballType;
+      if (ballNumber === 8) {
+        ballType = 'black';
+        color = 'black';
+      } else if (ballNumber <= 7) {
+        ballType = 'solid';
+        color = colors[ballNumber - 1];
+      } else {
+        ballType = 'stripe';
+        color = colors[ballNumber - 9];
+      }
+      ballsArray.push(new Ball(ballType, x, y, 0, 0, color, ballNumber));
+      ballNumber++;
+      col++;
+    }
+    row++;
+    col = 0;
+  }
+};
+
+spawnBalls();
+
 function draw() {
   ctx.clearRect(0, 0, width, height);
 
