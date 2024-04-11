@@ -7,6 +7,8 @@ let height = canvas.height = window.innerHeight*0.75;
 let ballsArray = [];
 let colors = ['#DDB700', 'blue', 'red', 'purple', '#F68122', 'green', 'brown'];
 
+let rectanglesArray = [];
+
 window.addEventListener('resize', resize);
 function resize() {
   width = canvas.width = window.innerWidth*0.85;
@@ -21,7 +23,7 @@ class Ball {
     this.dy = dy;
     this.dx = dx;
     this.color = color;
-    this.radius = 20;
+    this.radius = 16;
     this.number = number;
     this.elasticity = 0.8;
     this.friction = 0.99;
@@ -88,12 +90,36 @@ class Ball {
   }
 }
 
+class Rectangle {
+  constructor(x, y, width, height, color) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.color = color;
+  }
+
+  draw() {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.rect(this.x, this.y, this.width, this.height);
+    ctx.fill();
+  }
+}
+
+rectanglesArray.push(new Rectangle(width/17, height/40, width/2.4, height/30 , 'green'));
+rectanglesArray.push(new Rectangle(width/17, height-height/17, width/2.4, height/30, 'green'));
+rectanglesArray.push(new Rectangle(width/45, height/9, height/30, height-height/4.5, 'green'));
+rectanglesArray.push(new Rectangle(width-width/26, height/9, height/30, height-height/4.5, 'green'));
+rectanglesArray.push(new Rectangle(width/1.91, height/40, width/2.4, height/30, 'green'));
+rectanglesArray.push(new Rectangle(width/1.91, height-height/17, width/2.4, height/30, 'green'));  
+
 const spawnBalls = () => {
   // Clear existing balls
   ballsArray = [];
 
   // Spawn cue ball
-  ballsArray.push(new Ball('cue', width / 6, height / 2, 80, 10, 'white', 0));
+  ballsArray.push(new Ball('cue', width / 6, height / 2, 130, 10, 'white', 0));
 
   // Spawn 15 balls
   let ballNumber = 1;
@@ -101,7 +127,7 @@ const spawnBalls = () => {
   let rackX = width / 1.5;
   let row = 0;
   let col = 0;
-  let radius = 20;
+  let radius = ballsArray[0].radius;
   let padding = 1;
 
   for (let i = 0; i < 5; i++) {
@@ -136,6 +162,17 @@ function draw() {
   for (let i = 0; i < ballsArray.length; i++) {
     ballsArray[i].draw();
     ballsArray[i].update();
+  }
+
+  for (let i = 0; i < rectanglesArray.length; i++) {
+    rectanglesArray[i].draw();
+  }
+
+  // Check for collisions with the walls
+  for (let i = 0; i < ballsArray.length; i++) {
+    for(let j = 0; j < rectanglesArray.length; j++) {
+      ballRectCollision(ballsArray[i], rectanglesArray[j]);
+    }
   }
 
   // Collision detection
@@ -203,5 +240,48 @@ function ballCollide(ball1, ball2) {
       if (relativeVelocityDotProduct > 0) {
           return;  // Balls are moving apart, not colliding
       }
+  }
+}
+
+function ballRectCollision(ball, rectangle) {
+  // Subdivide movement into smaller steps
+  const numSteps = 10;
+  const stepX = ball.dx / numSteps;
+  const stepY = ball.dy / numSteps;
+
+  // Perform collision detection at each step
+  for (let step = 1; step <= numSteps; step++) {
+    const nextX = ball.x + stepX * step;
+    const nextY = ball.y + stepY * step;
+
+    // Calculate the distance between the center of the ball and the center of the rectangle
+    const distX = Math.abs(nextX - rectangle.x - rectangle.width / 2);
+    const distY = Math.abs(nextY - rectangle.y - rectangle.height / 2);
+
+    // If the distance is greater than half rectangle + radius, then they are too far apart to be colliding
+    if (distX > (rectangle.width / 2 + ball.radius)) continue;
+    if (distY > (rectangle.height / 2 + ball.radius)) continue;
+
+    // If the distance is less than half rectangle, then they are definitely colliding
+    if (distX <= (rectangle.width / 2)) {
+      // Ball is colliding with the top or bottom of the rectangle, reflect dy
+      ball.dy *= -1;
+      return;
+    }
+    if (distY <= (rectangle.height / 2)) {
+      // Ball is colliding with the left or right of the rectangle, reflect dx
+      ball.dx *= -1;
+      return;
+    }
+
+    // Check for collision at rectangle corner
+    const dx = distX - rectangle.width / 2;
+    const dy = distY - rectangle.height / 2;
+    if (dx * dx + dy * dy <= (ball.radius * ball.radius)) {
+      // Ball is colliding with the corner of the rectangle, reflect both dx and dy
+      ball.dx *= -1;
+      ball.dy *= -1;
+      return;
+    }
   }
 }
