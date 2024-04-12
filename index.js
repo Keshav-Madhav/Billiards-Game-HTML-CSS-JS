@@ -7,12 +7,70 @@ let height = canvas.height = window.innerHeight*0.75;
 let ballsArray = [];
 let colors = ['#DDB700', 'blue', 'red', 'purple', '#F68122', 'green', 'brown'];
 
+let isMovingCue = false;
+let dragStartX, dragStartY;
+
 let rectanglesArray = [];
 
 window.addEventListener('resize', resize);
 function resize() {
   width = canvas.width = window.innerWidth*0.85;
   height = canvas.height = window.innerHeight*0.75;
+}
+
+canvas.addEventListener('contextmenu', function(event) {
+  event.preventDefault();
+});
+
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup', onMouseUp);
+
+
+function onMouseDown(event) {
+  if(event.button === 2) { // Check if right-click
+    event.preventDefault();
+    const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+    const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+
+    // Check if the mouse is right-clicked on the cue ball
+    if (isInsideCueBall(mouseX, mouseY)) {
+      isMovingCue = true;
+      dragStartX = mouseX;
+      dragStartY = mouseY;
+      ballsArray[0].radius = ballsArray[0].radius * 1.2;
+    }
+  }
+}
+
+function onMouseMove(event) {
+  if (isMovingCue) {
+    const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+    const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+
+    const dx = mouseX - dragStartX;
+    const dy = mouseY - dragStartY;
+
+    ballsArray[0].x += dx;
+    ballsArray[0].y += dy;
+
+    dragStartX = mouseX;
+    dragStartY = mouseY;
+  }
+}
+
+function onMouseUp(event) {
+  if (event.button === 2) {
+    isMovingCue = false;
+    ballsArray[0].radius = ballsArray[0].radius / 1.2;
+  }
+}
+
+// Function to check if the mouse is inside the cue ball
+function isInsideCueBall(mouseX, mouseY) {
+  const cueBall = ballsArray[0];
+  const distance = Math.sqrt((mouseX - cueBall.x) ** 2 + (mouseY - cueBall.y) ** 2);
+  return distance <= cueBall.radius;
 }
 
 class Ball {
@@ -178,6 +236,9 @@ function draw() {
   // Collision detection
   for (let i = 0; i < ballsArray.length; i++) {
     for (let j = i + 1; j < ballsArray.length; j++) {
+      if((ballsArray[i].type === 'cue' || ballsArray[j].type === 'cue') && isMovingCue) {
+        continue;
+      }
       const dx = ballsArray[i].x - ballsArray[j].x;
       const dy = ballsArray[i].y - ballsArray[j].y;
       const distance = Math.sqrt(dx * dx + dy * dy);
