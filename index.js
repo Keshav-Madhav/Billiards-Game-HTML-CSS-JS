@@ -7,10 +7,12 @@ let height = canvas.height = window.innerHeight*0.75;
 let ballsArray = [];
 let colors = ['#DDB700', 'blue', 'red', 'purple', '#F68122', 'green', 'brown'];
 
-let isMovingCue = false;
-let dragStartX, dragStartY;
-
 let rectanglesArray = [];
+
+let isMovingCue = false;
+let isDraggingBall = false;
+let dragStartX, dragStartY;
+let dragEndX, dragEndY;
 
 window.addEventListener('resize', resize);
 function resize() {
@@ -22,32 +24,41 @@ canvas.addEventListener('contextmenu', function(event) {
   event.preventDefault();
 });
 
-canvas.addEventListener('mousedown', onMouseDown);
-canvas.addEventListener('mousemove', onMouseMove);
-canvas.addEventListener('mouseup', onMouseUp);
+window.addEventListener('mousedown', onMouseDown);
+window.addEventListener('mousemove', onMouseMove);
+window.addEventListener('mouseup', onMouseUp);
 
 
 function onMouseDown(event) {
-  if(event.button === 2) { // Check if right-click
-    event.preventDefault();
-    const mouseX = event.clientX - canvas.getBoundingClientRect().left;
-    const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+  const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+  const mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
-    // Check if the mouse is right-clicked on the cue ball
+  if (event.button === 2) { // Right-click
     if (isInsideCueBall(mouseX, mouseY)) {
       isMovingCue = true;
       dragStartX = mouseX;
       dragStartY = mouseY;
       ballsArray[0].radius = ballsArray[0].radius * 1.2;
+      ballsArray[0].dx = 0;
+      ballsArray[0].dy = 0;
+    }
+  } else if (event.button === 0) { // Left-click
+    for (let i = 0; i < ballsArray.length; i++) {
+      if (isInsideCueBall(mouseX, mouseY, ballsArray[i])) {
+        isDraggingBall = true;
+        dragStartX = mouseX;
+        dragStartY = mouseY;
+        break;
+      }
     }
   }
 }
 
 function onMouseMove(event) {
-  if (isMovingCue) {
-    const mouseX = event.clientX - canvas.getBoundingClientRect().left;
-    const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+  const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+  const mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
+  if (isMovingCue) {
     const dx = mouseX - dragStartX;
     const dy = mouseY - dragStartY;
 
@@ -56,13 +67,32 @@ function onMouseMove(event) {
 
     dragStartX = mouseX;
     dragStartY = mouseY;
+  } else if (isDraggingBall) {
+    dragEndX = mouseX;
+    dragEndY = mouseY;
   }
 }
 
 function onMouseUp(event) {
-  if (event.button === 2) {
+  if (isMovingCue) {
     isMovingCue = false;
     ballsArray[0].radius = ballsArray[0].radius / 1.2;
+  } else if (isDraggingBall) {
+    // Calculate the velocity based on the mouse movement (opposite direction)
+    const dx = dragStartX - dragEndX;
+    const dy = dragStartY - dragEndY;
+    const launchSpeed = 5; // Adjust as needed
+
+    // Apply the calculated velocity to the ball
+    ballsArray[0].dx = dx / launchSpeed;
+    ballsArray[0].dy = dy / launchSpeed;
+
+    // Reset drag variables
+    isDraggingBall = false;
+    dragStartX = null;
+    dragStartY = null;
+    dragEndX = null;
+    dragEndY = null;
   }
 }
 
