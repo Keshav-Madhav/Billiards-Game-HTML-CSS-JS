@@ -104,19 +104,19 @@ function isInsideCueBall(mouseX, mouseY) {
 }
 
 class Ball {
-  constructor(type, x, y, dx, dy, color, number) {
+  constructor(type, x, y, dx, dy, color, number, radius = 16, weight = 1) {
     this.type = type;
     this.x = x;
     this.y = y;
     this.dy = dy;
     this.dx = dx;
     this.color = color;
-    this.radius = 16;
+    this.radius = radius;
     this.number = number;
     this.elasticity = 0.8;
     this.friction = 0.99;
     this.wallElasticity = 0.7;
-    this.weight = 1;
+    this.weight = weight;
   }
 
   draw() {
@@ -126,7 +126,7 @@ class Ball {
     ctx.fill();
   
     // Draw number in the center
-    if (this.type !== 'cue') {
+    if (this.type !== 'cue' && this.type !== 'holes') {
       ctx.fillStyle = 'white';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
@@ -159,7 +159,9 @@ class Ball {
       this.dy = 0;
     }
 
-    this.wallCollision();
+    if(this.type !== 'holes'){
+      this.wallCollision();
+    }
   }
 
   wallCollision() {
@@ -207,7 +209,7 @@ const spawnBalls = () => {
   ballsArray = [];
 
   // Spawn cue ball
-  ballsArray.push(new Ball('cue', width / 6, height / 2, 130, 10, 'white', 0));
+  ballsArray.push(new Ball('cue', width / 6, height / 2, 0, 0, 'white', 0));
 
   // Spawn 15 balls
   let ballNumber = 1;
@@ -240,6 +242,13 @@ const spawnBalls = () => {
     row++;
     col = 0;
   }
+
+  ballsArray.push(new Ball('holes', 28, 16, 0, 0, 'black', 0, 30,1000000));
+  ballsArray.push(new Ball('holes', width - 28, 16, 0, 0, 'black', 0, 30,1000000));
+  ballsArray.push(new Ball('holes', 28, height - 16, 0, 0, 'black', 0, 30,1000000));
+  ballsArray.push(new Ball('holes', width - 28, height - 16, 0, 0, 'black', 0, 30,1000000));
+  ballsArray.push(new Ball('holes', width/2, height -12, 0, 0, 'black', 0, 30,1000000));
+  ballsArray.push(new Ball('holes', width/2, 12, 0, 0, 'black', 0, 30,1000000));
 };
 
 spawnBalls();
@@ -356,11 +365,13 @@ function ballRectCollision(ball, rectangle) {
     // If the distance is less than half rectangle, then they are definitely colliding
     if (distX <= (rectangle.width / 2)) {
       // Ball is colliding with the top or bottom of the rectangle, reflect dy
+      ball.y = ball.y - stepY * step;
       ball.dy *= -1;
       return;
     }
     if (distY <= (rectangle.height / 2)) {
       // Ball is colliding with the left or right of the rectangle, reflect dx
+      ball.x = ball.x - stepX * step;
       ball.dx *= -1;
       return;
     }
@@ -370,6 +381,8 @@ function ballRectCollision(ball, rectangle) {
     const dy = distY - rectangle.height / 2;
     if (dx * dx + dy * dy <= (ball.radius * ball.radius)) {
       // Ball is colliding with the corner of the rectangle, reflect both dx and dy
+      ball.x = ball.x - stepX * step;
+      ball.y = ball.y - stepY * step;
       ball.dx *= -1;
       ball.dy *= -1;
       return;
